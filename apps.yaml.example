@@ -1,0 +1,4 @@
+ssl_expiration:
+  module: ssl_expiration
+  class: SSLExpiration
+  cert_file: <path_to_cert_file/cert_file_name>
