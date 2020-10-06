@@ -54,11 +54,13 @@ class SSLCertificate:
         self._data_dict = copy.deepcopy(self._default_data_dict)
         try:
             cert_dict = ssl._ssl._test_decode_cert(self.filename)
-            self._data_dict.update(cert_dict)
+            self._data_dict.update(cert_dict)            
+        except Exception as e:
+            self.log(e, level="ERROR")
+            self.exists = False
+        finally:
             for field, value in self._data_dict.items():
                 setattr(self, field, value)
-        except Exception:
-            self.exists = False
 
     def expiration_days(self):
         if not self.date_after:
@@ -91,6 +93,8 @@ class SSLExpiration(hass.Hass):
   #initialize() function which will be called at startup and reload
   def initialize(self):
     self.cert = SSLCertificate(self.args["cert_file"])
+    if not self.cert.exists:
+      self.log(f"Error reading cert file {self.args['cert_file']}", level='ERROR')
     # Create a time object for 00:01:00
     time = datetime.time(0, 1, 0)
     self.run_daily(self.update_sensor, time)
@@ -98,14 +102,15 @@ class SSLExpiration(hass.Hass):
 
   # update sensor state
   def update_sensor(self, event, data, kwargs):
-    self.log(f"{datetime.datetime.now()}: SSL update triggered by {event}")
+    self.log(f"{datetime.datetime.now()}: SSL update triggered by {event} - {self.cert}")
     self.cert.refresh()
     attrs = {
       "subject": self.cert.subject,
       "issuer": self.cert.issuer,
       "version": self.cert.version,
       "start_date": self.cert.date_before,
-      "end_date": self.cert.date_after
+      "end_date": self.cert.date_after,
+      "updated_at": datetime.datetime.now(),
     }
     self.set_state(_default_sensor_name, state=self.cert.state(), attributes=attrs, replace=True)
   
