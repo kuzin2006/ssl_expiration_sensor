@@ -95,6 +95,7 @@ class SSLExpiration(hass.Hass):
     self.cert = SSLCertificate(self.args["cert_file"])
     if not self.cert.exists:
       self.log(f"Error reading cert file {self.args['cert_file']}", level='ERROR')
+    self.update_sensor("INIT", None, {})
     # Create a time object for 00:01:00
     time = datetime.time(0, 1, 0)
     self.run_daily(self.update_sensor, time)
@@ -102,7 +103,7 @@ class SSLExpiration(hass.Hass):
 
   # update sensor state
   def update_sensor(self, event, data, kwargs):
-    self.log(f"{datetime.datetime.now()}: SSL update triggered by {event} - {self.cert}")
+    self.log(f"{datetime.datetime.now()}: SSL update triggered by {event}")
     self.cert.refresh()
     attrs = {
       "subject": self.cert.subject,
